@@ -4,7 +4,7 @@ use thiserror::Error;
 use url::Url;
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Blog {
+pub(crate) struct Blog {
     name: String,
     title: Option<String>,
     url: Url,
@@ -17,7 +17,7 @@ struct Blog {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "lowercase")]
-pub enum Post {
+pub(crate) enum Post {
     Blocks {
         is_blocks_post_format: bool,
         blog_name: String,
@@ -56,7 +56,7 @@ pub enum Post {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "lowercase")]
-enum Content {
+pub(crate) enum Content {
     Text {
         text: String,
         subtype: Option<String>,
@@ -106,7 +106,7 @@ enum Content {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "lowercase")]
-enum InlineFormat {
+pub(crate) enum InlineFormat {
     Bold {
         start: usize,
         end: usize,
@@ -141,7 +141,7 @@ enum InlineFormat {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Poster {
+pub(crate) struct Poster {
     #[serde(rename = "type")]
     ty: String,
     url: Url,
@@ -150,28 +150,28 @@ struct Poster {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Layout {
+pub(crate) struct Layout {
     #[serde(rename = "type")]
     ty: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Trail {
+pub(crate) struct Trail {
     #[serde(rename = "type")]
     ty: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct MediaObject {
-    media_key: Option<String>,
-    url: Url,
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub(crate) struct MediaObject {
+    pub media_key: Option<String>,
+    pub url: Url,
     #[serde(rename = "type")]
-    ty: Option<String>,
-    width: Option<usize>,
-    height: Option<usize>,
-    original_dimensions_missing: Option<bool>,
-    cropped: Option<bool>,
-    has_original_dimensions: Option<bool>,
+    pub ty: Option<String>,
+    pub width: Option<usize>,
+    pub height: Option<usize>,
+    pub original_dimensions_missing: Option<bool>,
+    pub cropped: Option<bool>,
+    pub has_original_dimensions: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -182,43 +182,43 @@ struct EmbedIFrameObject {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Meta {
-    status: usize,
-    msg: String,
+pub(crate) struct Meta {
+    pub status: usize,
+    pub msg: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TumblrResponse {
-    meta: Meta,
+pub(crate) struct TumblrResponse {
+    pub meta: Meta,
     pub response: Option<Liked>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Liked {
-    liked_posts: Vec<Post>,
-    liked_count: usize,
+pub(crate) struct Liked {
+    pub liked_posts: Vec<Post>,
+    pub liked_count: usize,
     #[serde(rename = "_links")]
     pub pagination: Pagination,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Pagination {
+pub struct Pagination {
     pub next: Option<PaginationResult>,
-    prev: Option<PaginationResult>,
+    pub prev: Option<PaginationResult>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct PaginationResult {
-    href: String,
-    method: String,
-    query_params: QueryParams,
+pub struct PaginationResult {
+    pub href: String,
+    pub method: String,
+    pub query_params: QueryParams,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct QueryParams {
-    npf: Option<String>,
-    before: Option<String>,
-    after: Option<String>,
+pub struct QueryParams {
+    pub npf: Option<String>,
+    pub before: Option<String>,
+    pub after: Option<String>,
 }
 
 #[derive(Debug, Error)]
