@@ -1,3 +1,4 @@
+mod auth;
 mod tumblr;
 use anyhow::*;
 use clap::*;
@@ -5,6 +6,7 @@ use env_logger::Env;
 use futures::{StreamExt, *};
 use log::*;
 use reqwest::Client;
+use std::env;
 use tumblr::*;
 
 #[derive(Debug, Parser)]
