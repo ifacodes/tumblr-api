@@ -88,3 +88,17 @@ async fn authenticate() -> Result<StandardTokenResponse<EmptyExtraTokenFields, B
         }
     }
 }
+
+#[tokio::test]
+async fn test_auth() {
+    std::env::set_var(
+        "API_KEY",
+        "yWH70O23rRJzAO69e6nj0lRUdrU7iCs8hCiUJZ6V7SM4TZGxIf",
+    );
+    std::env::set_var(
+        "API_SECRET",
+        "yvwu6G7C1TXv8dCbY5leERurQOY77sy9TK0g1NbdNFbZy1FWnP",
+    );
+    let token = authenticate().await;
+    println!("{:#?}", token)
+}
