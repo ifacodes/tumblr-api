@@ -1,23 +1,43 @@
-use reqwest::{Client, ClientBuilder};
-
-#[derive(Debug, Default)]
-pub struct TumblrClient {
+use crate::auth::{self, Authentication, Token};
+use anyhow::{anyhow, bail, Result};
+use reqwest::Client;
+use thiserror::Error;
+#[derive(Debug)]
+pub struct TumblrClient<A: Authentication> {
     client: Client,
-    consumer_key: &'static str,
-    consumer_secret: &'static str,
-    token: Option<()>,
-    token_secret: Option<()>,
+    token: Option<A>,
 }
 
-impl TumblrClient {
-    fn new() -> Self {
-        Self::default()
+impl<A: Authentication> TumblrClient<A> {
+    fn new(token: A) -> Self {
+        Self {
+            client: Client::new(),
+            token: Some(token),
+        }
     }
 }
 
+#[derive(Debug, Error)]
+#[error(transparent)]
+struct Error(#[from] anyhow::Error);
+
 /// Blog Methods
-impl TumblrClient {
-    fn info(&self) {}
+impl<A: Authentication> TumblrClient<A> {
+    async fn info(&self, blog: &str) -> Result<()> {
+        let res = self
+            .client
+            .get(format!("https://api.tumblr.com/v2/blog/{}/info", blog))
+            .bearer_auth(
+                self.token
+                    .as_ref()
+                    .ok_or_else(|| Error(anyhow!("no token")))?
+                    .bearer_token(),
+            )
+            .send()
+            .await?;
+        println!("{:#?}", res.text().await?);
+        Ok(())
+    }
     fn avatar(&self) {}
     fn blocks(&self) {}
     fn block(&self) {}
@@ -45,7 +65,7 @@ impl TumblrClient {
 }
 
 /// User Methods
-impl TumblrClient {
+impl<A: Authentication> TumblrClient<A> {
     fn user_info(&self) {}
     fn user_limits(&self) {}
     fn user_dashboard(&self) {}
@@ -60,6 +80,6 @@ impl TumblrClient {
 }
 
 /// Tagged Method
-impl TumblrClient {
+impl<A: Authentication> TumblrClient<A> {
     fn tagged(&self) {}
 }

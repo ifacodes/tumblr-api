@@ -1,16 +1,68 @@
-use anyhow::{ensure, Result};
+use std::time::Duration;
+
+use crate::tumblr::scope;
+use ::reqwest::Client;
+use anyhow::{anyhow, bail, ensure, Result};
 use oauth2::{
-    basic::{BasicClient, BasicTokenType},
+    basic::{BasicClient, BasicTokenResponse, BasicTokenType},
     reqwest::async_http_client,
     *,
 };
+use thiserror::Error;
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
     net::TcpListener,
 };
 use url::Url;
+pub trait Authentication {
+    fn bearer_token(&self) -> &String;
+    fn refresh_token(&self) -> Option<&String>;
+}
 
-async fn authenticate() -> Result<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>> {
+pub struct Token {
+    bearer_token: AccessToken,
+    refresh_token: Option<RefreshToken>,
+    expires_in: Option<Duration>,
+    scopes: Vec<scope::Scope>,
+}
+
+#[derive(Error, Debug)]
+#[error(transparent)]
+struct Error(#[from] anyhow::Error);
+
+impl TryFrom<BasicTokenResponse> for Token {
+    type Error = anyhow::Error;
+    fn try_from(value: BasicTokenResponse) -> Result<Self> {
+        let bearer_token = value.access_token().clone();
+        let refresh_token = value.refresh_token().cloned();
+        let expires_in = value.expires_in();
+        let scopes: Vec<scope::Scope> = value
+            .scopes()
+            .ok_or_else(|| Error(anyhow!("Missing Scopes")))?
+            .iter()
+            .map(|s| s.as_str().parse::<scope::Scope>())
+            .collect::<Result<Vec<_>>>()?;
+        Ok(Self {
+            bearer_token,
+            refresh_token,
+            expires_in,
+            scopes,
+        })
+    }
+}
+
+impl Authentication for Token {
+    fn bearer_token(&self) -> &String {
+        self.bearer_token.secret()
+    }
+
+    fn refresh_token(&self) -> Option<&String> {
+        self.refresh_token.as_ref().map(|rt| rt.secret())
+    }
+}
+
+pub(crate) async fn authenticate(
+) -> Result<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>> {
     let client = BasicClient::new(
         ClientId::new(std::env::var("API_KEY").expect("Missing API_KEY env variable.")),
         Some(ClientSecret::new(
@@ -91,14 +143,18 @@ async fn authenticate() -> Result<StandardTokenResponse<EmptyExtraTokenFields, B
 
 #[tokio::test]
 async fn test_auth() {
-    std::env::set_var(
-        "API_KEY",
-        "yWH70O23rRJzAO69e6nj0lRUdrU7iCs8hCiUJZ6V7SM4TZGxIf",
-    );
-    std::env::set_var(
-        "API_SECRET",
-        "yvwu6G7C1TXv8dCbY5leERurQOY77sy9TK0g1NbdNFbZy1FWnP",
-    );
     let token = authenticate().await;
-    println!("{:#?}", token)
+    println!("{:#?}", token);
+
+    let client = Client::new();
+    let res = client
+        .get("https://api.tumblr.com/v2/blog/manxomefoe.tumblr.com/info")
+        .bearer_auth(token.unwrap().access_token().secret())
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap();
+    println!("{:#?}", res)
 }

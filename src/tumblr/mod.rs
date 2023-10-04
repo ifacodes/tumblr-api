@@ -2,6 +2,7 @@ use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use url::Url;
+pub mod scope;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Blog {
